@@ -28,10 +28,12 @@ class Basketball{
         let yOffset = this.yDir * timePasseY + 0.5 * this.gravity * (timePasseY ** 2);
         // console.log(this.basePosition);
         let currentPosition = this.basePosition.plus(vec4(0, yOffset, zOffset, 1));
-        if(this.basePosition[1] + yOffset <= -0)
+
+        // Ground collision (bouncing)
+        if(this.basePosition[1] + yOffset <= 1)
         {
             this.baseTimeY = currentTime;
-            this.basePosition[1] = 0;
+            this.basePosition[1] = 1;
             this.yDir = this.yDir * 0.8;
         }
         return currentPosition;
