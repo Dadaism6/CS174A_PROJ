@@ -5,6 +5,32 @@ const {
 } = tiny;
 const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
+class Basketball{
+  constructor(initialPosition, initialTime, throwDirection, gravity = -9.8)
+  {
+    	this.gravity = gravity;
+    	this.basePosition = vec4(0, 5, -17.5, 1);
+    	// this.basePosition = initialPosition;
+    	this.baseTime = initialTime;
+    	
+    	this.zDir = throwDirection.dot(vec3(0, 0, 1));
+    	this.yDir = throwDirection.dot(vec3(0, 1, 0));
+    	// console.log(this.zDir);
+    	// console.log(this.yDir);
+  }
+  
+  calculatePosition(currentTime)
+  {
+    let timePassed = currentTime - this.baseTime;
+    let zOffset = this.zDir * timePassed;
+    let yOffset = this.yDir * timePassed + 0.5 * this.gravity * (timePassed ** 2);
+    // console.log(this.basePosition);
+    let currentPosition = this.basePosition.plus(vec4(0, yOffset, zOffset, 1));
+    return currentPosition;
+  }
+  
+}
+
 export class Proj_main_scene extends Scene {
     constructor() {
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
@@ -18,30 +44,53 @@ export class Proj_main_scene extends Scene {
             sun: new defs.Subdivision_Sphere(4),
           	stands: new defs.Cube(),
           	skybox: new defs.Cube(),
+            lampposts: new defs.Cube(),
+            lamplights: new defs.Subdivision_Sphere(3),
         };
         // *** Materials
         this.materials = {
             sun: new Material(new defs.Phong_Shader(),
                 {ambient: 1, color: hex_color("#ffffff")}),
-          	floor: new Material(new Phong_Shader(), 
-                {color: hex_color("#0000FF"), ambient: .1, diffusivity: 0.6, specularity: 0.4}),
-            stands: new Material(new Phong_Shader(), 
-              	{ambient: 1, color: hex_color("#ffffff")}),
+          	floor: new Material(new Phong_Shader(4), 
+                {color: color(0.5, 0.8, 0.5, 1), ambient: .1, diffusivity: 0.6, specularity: 0.4}),
+            stands: new Material(new Phong_Shader(4), 
+              	{ambient: 0.5, color: hex_color("#ffffff")}),
           	skybox: new Material(new Phong_Shader(),
               	{ambient: 1, color: hex_color("#0000ff")}),
+            lampposts: new Material(new Phong_Shader(4), 
+                {ambient: 0.1, diffusivity: 0.5, specularity: 0, color: hex_color("#808080")}),
+            lamplights: new Material(new Phong_Shader(), 
+                {ambient: 1, color: hex_color("#ffffff")}),
+            basketball: new Material(new defs.Phong_Shader(4),
+                {ambient: 1, color: hex_color("#8b0000")})
         }
-
+				// ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
       	this.return_to_initial = false;
+      	// ===== Basketball =====
+      	this.initial_basketball_location = vec4(0, 5, -20, 1);
+      	this.hitThrow = false;
+      	this.basketball;
     }
 
     make_control_panel() {
         this.key_triggered_button("Return to the main scene", ["Control", "R"], () => {this.return_to_initial = true;});
         this.new_line();
+      	this.key_triggered_button("Throw basketball", ["Control", "T"], () => {this.hitThrow = true;});
     }
 
-  	draw_lamps(context, program_state, model_transform) {
-    		
+    get_lamp_transform(context, program_state, model_transform, lights_on, lamp_height=2.5, light_color=hex_color("#ffffff")) {
+        let lamppost_transform = model_transform
+            .times(Mat4.translation(0, lamp_height, 0))
+            .times(Mat4.scale(0.1, lamp_height, 0.1));
+        let light_transform = model_transform
+            .times(Mat4.translation(0, 2*lamp_height, 0))
+            .times(Mat4.scale(0.2, 0.2, 0.2));
+      	
+        let light_position = model_transform.times(Mat4.translation(0, 2*lamp_height, 0)).times(vec4(0, 0, 0, 1));
+        if (lights_on) 
+            program_state.lights.push(new Light(light_position, light_color, 10**3))
+      	return [lamppost_transform, light_transform];
     }
   
     display(context, program_state) {
@@ -59,34 +108,49 @@ export class Proj_main_scene extends Scene {
           this.return_to_initial = false;
           console.log(this.return_to_initial);
         }	// currently not working
-
+      	//===============================================end camera section=============================================
       	const pi = Math.PI;
         let model_transform = Mat4.identity();
         program_state.projection_transform = Mat4.perspective(
             pi / 4, context.width / context.height, .1, 1000);
         const t = program_state.animation_time / 1000, dt = program_state.animation_delta_time / 1000;
       
-      	// The sun
+				//=============================================== The sun =============================================
         let sun_transform = model_transform
         												.times(Mat4.rotation(-(2./60.) * pi * t - pi / 2., 0, 0, 1))
         												.times(Mat4.translation(-20, 0, 20));
       	let sun_position = sun_transform.times(vec4(0, 0, 0, 1));
         // The parameters of the Light are: position, color, size
-        program_state.lights = [new Light(sun_position, color(1, 1, 1, 1), 10**5)];
-        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: color(1,1,1,1)}));
+        if (sun_position.dot(vec4(0, 1, 0, 0)) < -1)
+            program_state.lights = [];
+        else
+           program_state.lights = [new Light(sun_position, color(1, 1, 1, 1), 10**5)];
+
       
-      	// Skybox
+      	//=============================================== skybox =============================================
       	let skybox_transform = Mat4.scale(40, 40, 40);
       	let skybox_color_light = color(0.4, 0.7, 1, 1);
       	let skybox_color_dark = color(0.2, 0.2, 0.4, 1);
       	let skybox_color_period = - 0.5 * Math.cos((2./60.) * pi * t) + 0.5
       	let skybox_color = (skybox_color_light.times(1 - skybox_color_period)).plus(skybox_color_dark.times(skybox_color_period));
-      	this.shapes.skybox.draw(context, program_state, skybox_transform, this.materials.skybox.override({color: skybox_color}));
-      
-      	let floor_transform = Mat4.scale(50, 0.1, 50);
-        this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
 
-        let stands_base = Mat4.translation(0,0,0);
+      	// floor
+      	let floor_transform = Mat4.scale(50, 0.1, 50);
+      
+      	// light
+        let lamp_transforms = [];
+        let lamp_light_transforms = [];
+        let light_num = 4;
+        let lights_on = sun_position.dot(vec4(0, 1, 0, 0)) < -1;
+        for (let i = 0; i < light_num; i++) {
+            let lamppost_transform = model_transform.times(Mat4.translation((-1)**i * 15, 0, 5 + 20 * Math.floor(i/2)));
+            let [a, b] = this.get_lamp_transform(context, program_state, lamppost_transform, lights_on);
+            lamp_transforms.push(a);
+            lamp_light_transforms.push(b);
+        }
+      
+				//=============================================== define stands =============================================
+        let stands_base = Mat4.translation(0,0,15);
         let standscale = 2;
         let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, 0));
         stands_board_transform = stands_board_transform.times(Mat4.scale(1.8 * standscale, 1.05 * standscale, 0.1));
@@ -94,10 +158,36 @@ export class Proj_main_scene extends Scene {
         stands_support_transform = stands_support_transform.times(Mat4.scale(0.2 * standscale, 0.5 * 3.425 * standscale, 0.1));
         let stands_foundation = stands_base.times(Mat4.translation(0, 0.15*standscale, 0));
         stands_foundation = stands_foundation.times(Mat4.scale(standscale, 0.155* standscale, standscale));
+      
+      
+      	//=============================================== draw everything =============================================
+      	this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: color(1,1,1,1)}));
+      	this.shapes.skybox.draw(context, program_state, skybox_transform, this.materials.skybox.override({color: skybox_color}));
+        this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
         this.shapes.stands.draw(context, program_state, stands_board_transform, this.materials.stands);
         this.shapes.stands.draw(context, program_state, stands_support_transform, this.materials.stands);
         this.shapes.stands.draw(context, program_state, stands_foundation, this.materials.stands);
-
+        for(let i = 0; i < light_num; i++) {
+            this.shapes.lampposts.draw(context, program_state, lamp_transforms[i], this.materials.lampposts);
+            if (lights_on)
+                this.shapes.lamplights.draw(context, program_state, lamp_light_transforms[i], this.materials.lamplights);
+            else
+                this.shapes.lamplights.draw(context, program_state, lamp_light_transforms[i], this.materials.lamplights.override({color: hex_color("#808080")}));
+        }
+      
+      	//=============================================== basketball =============================================
+      	
+      	if (this.hitThrow)
+        {
+          this.hitThrow = false;
+          this.basketball = new Basketball(this.initial_basketball_position, t, vec3(0, 10, 10));
+        }
+      	if (this.basketball)
+        {
+          let basketball_coord = this.basketball.calculatePosition(t);
+          let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
+          this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
+        }
         
     }
 }
