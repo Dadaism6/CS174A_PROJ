@@ -132,8 +132,8 @@ export class Proj_main_scene extends Scene {
             .times(Mat4.scale(3, 3, 3));
         let sun_position = sun_transform.times(vec4(0, 0, 0, 1));
         let white = hex_color("#ffffff");
-        let orange = hex_color("#F68656");
-        let sun_phase = Math.sin(Math.abs((2./60.) * pi * t - pi / 2));
+        let orange = hex_color("#FFD580");
+        let sun_phase = Math.sin(Math.abs((4./60.) * pi * t + pi / 2));
         let sun_color = orange.times(1-sun_phase).plus(white.times(sun_phase));
         // The parameters of the Light are: position, color, size
         if (sun_position.dot(vec4(0, 1, 0, 0)) < -1)
