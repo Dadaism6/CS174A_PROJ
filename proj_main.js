@@ -85,10 +85,18 @@ export class Proj_main_scene extends Scene {
       
       	let floor_transform = Mat4.scale(50, 0.1, 50);
         this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
-      
-      	let stands_base = Mat4.translation(-5,0,0);
-      	let stands_board_transform = Mat4.scale(2, 2, 0.1).times(Mat4.translation(0, 0.5, 0));
+
+        let stands_base = Mat4.translation(0,0,0);
+        let standscale = 2;
+        let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, 0));
+        stands_board_transform = stands_board_transform.times(Mat4.scale(1.8 * standscale, 1.05 * standscale, 0.1));
+        let stands_support_transform = stands_base.times(Mat4.translation(0, 0.5 * 3.425 * standscale, 0));
+        stands_support_transform = stands_support_transform.times(Mat4.scale(0.2 * standscale, 0.5 * 3.425 * standscale, 0.1));
+        let stands_foundation = stands_base.times(Mat4.translation(0, 0.15*standscale, 0));
+        stands_foundation = stands_foundation.times(Mat4.scale(standscale, 0.155* standscale, standscale));
         this.shapes.stands.draw(context, program_state, stands_board_transform, this.materials.stands);
+        this.shapes.stands.draw(context, program_state, stands_support_transform, this.materials.stands);
+        this.shapes.stands.draw(context, program_state, stands_foundation, this.materials.stands);
 
         
     }
