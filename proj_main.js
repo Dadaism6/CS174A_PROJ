@@ -13,7 +13,7 @@ const {
 const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
 class Basketball{
-    constructor(initialPosition, initialTime, throwDirection, gravity = -9.8)
+    constructor(initialPosition, initialTime, throwDirection, throwPower, gravity = -9.8)
     {
         this.gravity = gravity;
         // this.basePosition = vec4(0, 5, -17.5, 1);
@@ -21,9 +21,9 @@ class Basketball{
         this.basePosition = initialPosition;
         this.baseTimeZ = initialTime;
         this.baseTimeY = initialTime;
-
-        this.zDir = throwDirection.dot(vec3(0, 0, 1));
-        this.yDir = throwDirection.dot(vec3(0, 1, 0));
+      	this.throwPower = throwPower;
+        this.zDir = throwDirection.dot(vec3(0, 0, this.throwPower));
+        this.yDir = throwDirection.dot(vec3(0, this.throwPower, 0));
       	this.prediction_array = [];
         // console.log(this.zDir);
         // console.log(this.yDir);
@@ -115,11 +115,14 @@ export class Proj_main_scene extends Scene {
         }
         // ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
+        this.camera_location = vec3(0, 5, -20);
         this.return_to_initial = false;
         // ===== Basketball =====
         this.initial_basketball_position = vec4(0, 5, -17.5, 1);
         this.hitThrow = false;
         this.basketball;
+      	this.basketball_direction = vec3(0, 1, 1).normalized();
+      	this.basketball_power = 20.0;
     }
 
     make_control_panel() {
@@ -153,7 +156,12 @@ export class Proj_main_scene extends Scene {
         let y = 5;
         let x = this.getRandomArbitrary(-10, 10);
         let z = this.getRandomArbitrary(-5, -25);
+        this.camera_location = vec3(x, y, z);
         this.initial_camera_location = Mat4.look_at(vec3(x, y, z), vec3(0, 5, 30), vec3(0, 1, 0));
+      	// let xz_dir = vec3(0, 5, 30).minus(this.camera_location);
+      	// xz_dir.normalize();
+      	// xz_dir = xz_dir.plus(vec3(0,1,0));
+      	// this.basketball_direction = xz_dir.normalized();
         program_state.set_camera(this.initial_camera_location.copy());
     }
   
@@ -257,7 +265,7 @@ export class Proj_main_scene extends Scene {
         if (this.hitThrow)
         {
             this.hitThrow = false;
-            this.basketball = new Basketball(this.initial_basketball_position, t, vec3(0, 10, 10));
+            this.basketball = new Basketball(this.initial_basketball_position, t, this.basketball_direction, this.basketball_power);
         }
         if (this.basketball)	// if a basketball exists (in the throwing process), display the basketball's movement
         {
@@ -282,7 +290,7 @@ export class Proj_main_scene extends Scene {
         }
       	else	// if no basketball exist (not in the throwing process), display the expected trajectory
         {
-          	let placeholder_basketball = new Basketball(this.initial_basketball_position, t, vec3(0, 10, 10));
+          	let placeholder_basketball = new Basketball(this.initial_basketball_position, t, this.basketball_direction, this.basketball_power);
           	let predarray = placeholder_basketball.calculatePrediction(t);
           	for (let i = 0; i < predarray.length; i++)
           	{
