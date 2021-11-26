@@ -1,3 +1,11 @@
+/*
+ * Todo
+ * random initialize camera location
+ * control throw angle and power
+ * shoot in the basket?
+ * score
+ * texture
+ */
 import {defs, tiny} from './examples/common.js';
 
 const {
@@ -9,13 +17,14 @@ class Basketball{
     constructor(initialPosition, initialTime, throwDirection, gravity = -9.8)
     {
         this.gravity = gravity;
-        this.basePosition = vec4(0, 5, -17.5, 1);
-        // this.basePosition = initialPosition;
+        // this.basePosition = vec4(0, 5, -17.5, 1);
+        this.basePosition = initialPosition;
         this.baseTimeZ = initialTime;
         this.baseTimeY = initialTime;
 
         this.zDir = throwDirection.dot(vec3(0, 0, 1));
         this.yDir = throwDirection.dot(vec3(0, 1, 0));
+        this.prediction_array = [];
         // console.log(this.zDir);
         // console.log(this.yDir);
     }
@@ -23,9 +32,9 @@ class Basketball{
     calculatePosition(currentTime)
     {
         let timePassedZ = currentTime - this.baseTimeZ;
-        let timePasseY = currentTime - this.baseTimeY;
+        let timePassedY = currentTime - this.baseTimeY;
         let zOffset = this.zDir * timePassedZ;
-        let yOffset = this.yDir * timePasseY + 0.5 * this.gravity * (timePasseY ** 2);
+        let yOffset = this.yDir * timePassedY + 0.5 * this.gravity * (timePassedY ** 2);
         // console.log(this.basePosition);
         let currentPosition = this.basePosition.plus(vec4(0, yOffset, zOffset, 1));
 
@@ -37,6 +46,28 @@ class Basketball{
             this.yDir = this.yDir * 0.8;
         }
         return currentPosition;
+    }
+    calculatePrediction(currentTime)
+    {
+        // let index = 0;
+        let backup_baseTimeY = this.baseTimeY;
+        let backup_basePosition = this.basePosition;
+        let backup_yDir = this.yDir;
+
+        for (let i = 0; i < 50; i++)
+        {
+            let predictionTime = currentTime + i * 0.2
+            this.prediction_array[i] = this.calculatePosition(predictionTime);
+        }
+        this.baseTimeY = backup_baseTimeY;
+        this.basePosition = backup_basePosition;
+        this.yDir = backup_yDir;
+        // for(let i = currentTime; i < currentTime + 5.5; i = i + 0.5)
+        // {
+        // this.prediction_array[index] = this.calculatePosition(i);
+        // index++;
+        // }
+        return this.prediction_array
     }
 
 }
@@ -72,21 +103,23 @@ export class Proj_main_scene extends Scene {
             lamplights: new Material(new Phong_Shader(),
                 {ambient: 1, color: hex_color("#ffffff")}),
             basketball: new Material(new defs.Phong_Shader(5),
-                {ambient: 1, color: hex_color("#8b0000")})
+                {ambient: 1, color: hex_color("#8b0000")}),
+            predbasketball: new Material(new defs.Phong_Shader(5),
+                {ambient: 1, color: color(0.5, 0.0, 0.0, 0.5)})
         }
         // ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
         this.return_to_initial = false;
         // ===== Basketball =====
-        this.initial_basketball_location = vec4(0, 5, -17.5, 1);
+        this.initial_basketball_position = vec4(0, 5, -17.5, 1);
         this.hitThrow = false;
         this.basketball;
     }
 
     make_control_panel() {
-        this.key_triggered_button("Return to the main scene", ["Control", "R"], () => {this.return_to_initial = true;});
+        this.key_triggered_button("Return to the main scene", ["k"], () => {this.return_to_initial = true;});
         this.new_line();
-        this.key_triggered_button("Throw basketball", ["Control", "T"], () => {this.hitThrow = true;});
+        this.key_triggered_button("Throw basketball", ["t"], () => {this.hitThrow = true;});
     }
 
     get_lamp_transform(context, program_state, model_transform, lights_on, lamp_height=5, light_color=hex_color("#ffffff")) {
@@ -96,15 +129,15 @@ export class Proj_main_scene extends Scene {
         let light_transform = model_transform
             .times(Mat4.translation(0, 2*lamp_height, 0))
             .times(Mat4.scale(0.2, 0.2, 0.2));
-      	
+
         let light_position = model_transform.times(Mat4.translation(0, 2*lamp_height, 0)).times(vec4(0, 0, 0, 1));
-        if (lights_on) 
+        if (lights_on)
             program_state.lights.push(new Light(light_position, light_color, 100));
         else
-          	program_state.lights.push(new Light(light_position, light_color, 0));
-      	return [lamppost_transform, light_transform];
+            program_state.lights.push(new Light(light_position, light_color, 0));
+        return [lamppost_transform, light_transform];
     }
-  
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -112,14 +145,14 @@ export class Proj_main_scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(this.initial_camera_location);
+            program_state.set_camera(this.initial_camera_location.copy());
         }
         if (this.return_to_initial)
         {
-            program_state.set_camera(this.initial_camera_location);
+            program_state.set_camera(this.initial_camera_location.copy());
             this.return_to_initial = false;
-            console.log(this.return_to_initial);
-        }	// currently not working
+            // console.log(this.return_to_initial);
+        }
         //===============================================end camera section=============================================
         const pi = Math.PI;
         let model_transform = Mat4.identity();
@@ -204,7 +237,13 @@ export class Proj_main_scene extends Scene {
             let basketball_coord = this.basketball.calculatePosition(t);
             let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
             this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
+            let predarray = this.basketball.calculatePrediction(t);
+            for(let i = 0; i < predarray.length; i++)
+            {
+                let curr_pred = predarray[i]
+                let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
+                this.shapes.basketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
+            }
         }
-
     }
 }
