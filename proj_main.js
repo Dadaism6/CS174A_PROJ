@@ -24,7 +24,7 @@ class Basketball{
 
         this.zDir = throwDirection.dot(vec3(0, 0, 1));
         this.yDir = throwDirection.dot(vec3(0, 1, 0));
-      	this.prediction_array = [];
+        this.prediction_array = [];
         // console.log(this.zDir);
         // console.log(this.yDir);
     }
@@ -47,27 +47,27 @@ class Basketball{
         }
         return currentPosition;
     }
-  	calculatePrediction(currentTime)
-  	{
-      	// let index = 0;
+    calculatePrediction(currentTime)
+    {
+        // let index = 0;
         let backup_baseTimeY = this.baseTimeY;
-      	let backup_basePosition = this.basePosition;
-      	let backup_yDir = this.yDir;
-      
-      	for (let i = 0; i < 50; i++)
+        let backup_basePosition = this.basePosition;
+        let backup_yDir = this.yDir;
+
+        for (let i = 0; i < 50; i++)
         {
             let predictionTime = currentTime + i * 0.2
-          	this.prediction_array[i] = this.calculatePosition(predictionTime);
+            this.prediction_array[i] = this.calculatePosition(predictionTime);
         }
-      	this.baseTimeY = backup_baseTimeY;
-      	this.basePosition = backup_basePosition;
-      	this.yDir = backup_yDir;
-      	// for(let i = currentTime; i < currentTime + 5.5; i = i + 0.5)
-      	// {
-      	// this.prediction_array[index] = this.calculatePosition(i);
-      	// index++;
-      	// }
-      	return this.prediction_array
+        this.baseTimeY = backup_baseTimeY;
+        this.basePosition = backup_basePosition;
+        this.yDir = backup_yDir;
+        // for(let i = currentTime; i < currentTime + 5.5; i = i + 0.5)
+        // {
+        // this.prediction_array[index] = this.calculatePosition(i);
+        // index++;
+        // }
+        return this.prediction_array
     }
 
 }
@@ -129,15 +129,15 @@ export class Proj_main_scene extends Scene {
         let light_transform = model_transform
             .times(Mat4.translation(0, 2*lamp_height, 0))
             .times(Mat4.scale(0.2, 0.2, 0.2));
-      	
+
         let light_position = model_transform.times(Mat4.translation(0, 2*lamp_height, 0)).times(vec4(0, 0, 0, 1));
-        if (lights_on) 
+        if (lights_on)
             program_state.lights.push(new Light(light_position, light_color, 100));
         else
-          	program_state.lights.push(new Light(light_position, light_color, 0));
-      	return [lamppost_transform, light_transform];
+            program_state.lights.push(new Light(light_position, light_color, 0));
+        return [lamppost_transform, light_transform];
     }
-  
+
     display(context, program_state) {
         // display():  Called once per frame of animation.
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
@@ -237,13 +237,13 @@ export class Proj_main_scene extends Scene {
             let basketball_coord = this.basketball.calculatePosition(t);
             let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
             this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
-          	let predarray = this.basketball.calculatePrediction(t);
-          	for(let i = 0; i < predarray.length; i++)
-          	{
-          	let curr_pred = predarray[i]
-          	let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
-          	this.shapes.basketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
-          	}
+            let predarray = this.basketball.calculatePrediction(t);
+            for(let i = 0; i < predarray.length; i++)
+            {
+                let curr_pred = predarray[i]
+                let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
+                this.shapes.basketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
+            }
         }
     }
 }
