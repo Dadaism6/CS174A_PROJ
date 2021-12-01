@@ -8,7 +8,7 @@
 import {defs, tiny} from './examples/common.js';
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
@@ -110,8 +110,12 @@ export class Proj_main_scene extends Scene {
                 {ambient: 0.1, diffusivity: 0.5, specularity: 0, color: hex_color("#808080")}),
             lamplights: new Material(new Phong_Shader(),
                 {ambient: 1, color: hex_color("#ffffff")}),
-            basketball: new Material(new defs.Phong_Shader(5),
-                {ambient: 1, color: hex_color("#8b0000")}),
+            basketball: new Material(new Textured_Phong(),
+                {
+                    color: hex_color("#000000"),//background color should be black
+                    ambient: 1.0,
+                    texture: new Texture("assets/basketball.jpg","LINEAR_MIPMAP_LINEAR")
+                }),
             predbasketball: new Material(new defs.Phong_Shader(),
                 {ambient: 1, color: color(1, 1, 1, 0.2)})
         }
