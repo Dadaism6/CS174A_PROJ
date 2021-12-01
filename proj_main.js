@@ -6,6 +6,7 @@
  * texture
  */
 import {defs, tiny} from './examples/common.js';
+import {create_scoreboard} from './score-board.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -93,6 +94,7 @@ export class Proj_main_scene extends Scene {
             lamplights: new defs.Subdivision_Sphere(3),
           	predbasketball: new defs.Subdivision_Sphere(1),
             ring: new defs.Cylindrical_Tube(15, 15),
+            scoreboard: new defs.Cube(),
         };
         // *** Materials
         this.materials = {
@@ -117,7 +119,13 @@ export class Proj_main_scene extends Scene {
                     texture: new Texture("assets/basketball.jpg","LINEAR_MIPMAP_LINEAR")
                 }),
             predbasketball: new Material(new defs.Phong_Shader(),
-                {ambient: 1, color: color(1, 1, 1, 0.2)})
+                {ambient: 1, color: color(1, 1, 1, 0.2)}),
+            litScore: new Material(new Phong_Shader(), 
+                {ambient: 1, diffusivity: 0, specularity: 0, color: color(1, 0, 0, 1)}),
+            dimScore: new Material(new Phong_Shader(), 
+                {ambient: 0.4, diffusivity: 1, specularity: 0, color: color(0.7, 0.7, 0.7, 0.3)}),
+            scoreboard: new Material(new Phong_Shader(5), 
+                {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: color(1, 1, 1, 1)}),
         }
         // ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
@@ -130,6 +138,8 @@ export class Proj_main_scene extends Scene {
       	this.basketball_position = this.initial_basketball_position;
       	this.basketball_direction = vec3(0, 1, 1).normalized();
       	this.basketball_power = 20.0;
+        // ===== Score =====
+        this.score = 0;
     }
 
     make_control_panel() {
@@ -138,6 +148,8 @@ export class Proj_main_scene extends Scene {
         this.key_triggered_button("Throw basketball", ["t"], () => {this.hitThrow = true;});
         this.new_line();
         this.key_triggered_button("randomize position", ["Control", "0"], () => this.randomize = true);
+        this.new_line();
+        this.key_triggered_button("score +1", ["7"], () => this.score = (this.score + 1) % 100);
     }
 
     get_lamp_transform(context, program_state, model_transform, lights_on, lamp_height=5, light_color=hex_color("#ffffff")) {
@@ -254,6 +266,10 @@ export class Proj_main_scene extends Scene {
         ring_position = ring_position.times(Mat4.rotation(Math.PI, 0, 1, 1));
         ring_position = ring_position.times(Mat4.scale(0.5 * standscale, 0.5 * standscale, 0.2 * standscale));
 
+        //=============================================== score board =============================================
+        let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, this.materials.scoreboard]);
+
+
 
         //=============================================== draw everything =============================================
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: sun_color}));
@@ -269,6 +285,9 @@ export class Proj_main_scene extends Scene {
                 this.shapes.lamplights.draw(context, program_state, lamp_light_transforms[i], this.materials.lamplights);
             else
                 this.shapes.lamplights.draw(context, program_state, lamp_light_transforms[i], this.materials.lamplights.override({color: hex_color("#808080")}));
+        }
+        for (let each of scoreboard_things) {
+            each.shape.draw(context, program_state, each.transform, each.material);
         }
 
         //=============================================== basketball =============================================
