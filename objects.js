@@ -90,3 +90,44 @@ export function create_scoreboard(score, translation, shape, materials, unit=2) 
     board.transform = transform.times(board.transform);
     return [board, ...digit1, ...digit2];
 }
+
+export function create_tree(translation, shapes, materials) {
+    let trunk_transform = translation
+            .times(Mat4.translation(0, 4, 0))
+            .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
+            .times(Mat4.scale(1, 1, 8));
+    let trunk = {
+        material: materials[0],
+        shape: shapes[0],
+        transform: trunk_transform
+    };
+
+    let leaf_transform1 = translation
+            .times(Mat4.translation(0, 9, 0))
+            .times(Mat4.rotation(Math.PI / 2, -1, 0, 0))
+            .times(Mat4.scale(4, 4, 2));
+    let leaf_transform2 = translation
+            .times(Mat4.translation(0, 12, 0))
+            .times(Mat4.rotation(Math.PI / 2, -1, 0, 0))
+            .times(Mat4.scale(3.5, 3.5, 2));
+    let leaf_transform3 = translation
+            .times(Mat4.translation(0, 15, 0))
+            .times(Mat4.rotation(Math.PI / 2, -1, 0, 0))
+            .times(Mat4.scale(3, 3, 2));
+    let leaf1 = {
+        material: materials[1],
+        shape: shapes[1],
+        transform: leaf_transform1
+    }
+    let leaf2 = {
+        material: materials[1],
+        shape: shapes[1],
+        transform: leaf_transform2
+    }
+    let leaf3 = {
+        material: materials[1],
+        shape: shapes[1],
+        transform: leaf_transform3
+    }
+    return [trunk, leaf1, leaf2, leaf3];
+}

@@ -6,9 +6,8 @@
  * texture
  */
 import { defs, tiny } from './examples/common.js';
-import { create_scoreboard } from './score-board.js';
+import { create_scoreboard, create_tree } from './objects.js';
 import { getRandomArbitrary, randn_bm } from './utils.js';
-import { Shadow_Textured_Phong_Shader } from './examples/shadow-demo-shaders.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -97,15 +96,17 @@ export class Proj_main_scene extends Scene {
           	predbasketball: new defs.Subdivision_Sphere(1),
             ring: new defs.Cylindrical_Tube(15, 15),
             scoreboard: new defs.Cube(),
+            treetrunk: new defs.Cylindrical_Tube(15, 15),
+            leaves: new defs.Closed_Cone(15, 15),
         };
         // *** Materials
         this.materials = {
             sun: new Material(new defs.Phong_Shader(),
-                {ambient: 1, color: hex_color("#ffffff")}),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#ffffff")}),
             floor: new Material(new Phong_Shader(5),
                 {color: color(0.5, 0.8, 0.5, 1), ambient: .2, diffusivity: 0.9, specularity: 0.1}),
             stands: new Material(new Phong_Shader(5),
-                {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: color(1, 1, 1, 1)}),
+                {ambient: 0.3, diffusivity: 0.8, specularity: 1, color: color(1, 1, 1, 1)}),
            	ring: new Material(new Phong_Shader(5),
                 {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: hex_color("#FFA500")}),
             skybox: new Material(new Phong_Shader(),
@@ -128,6 +129,10 @@ export class Proj_main_scene extends Scene {
                 {ambient: 0.4, diffusivity: 1, specularity: 0, color: color(0.7, 0.7, 0.7, 0.3)}),
             scoreboard: new Material(new Phong_Shader(5), 
                 {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: color(1, 1, 1, 1)}),
+            treetrunk: new Material(new Phong_Shader(5), 
+                {ambient: 0.3, diffusivity: 0.6, specularity: 0, color: color(85/255, 50/255, 0, 1)}),
+            leaves: new Material(new Phong_Shader(5), 
+                {ambient: 0.3, diffusivity: 0.6, specularity: 0, color: color(0/255, 85/255, 15/255, 1)}),
         }
         // ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
@@ -176,7 +181,7 @@ export class Proj_main_scene extends Scene {
   
     randomize_camera_location(program_state) {
         let y = 5;
-        let x = getRandomArbitrary(-10, 10);
+        let x = getRandomArbitrary(-8, 8);
         let z = getRandomArbitrary(-5, -25);
         this.camera_location = vec3(x, y, z);
       	this.basketball_position = this.camera_location;
@@ -219,26 +224,27 @@ export class Proj_main_scene extends Scene {
 
         //=============================================== The sun =============================================
         let sun_transform = model_transform
-            .times(Mat4.rotation(-(2./60.) * pi * t - pi / 2., 0, 0, 1))
-            .times(Mat4.translation(-25, 0, 45))
+            .times(Mat4.rotation(-(5./60.) * pi * t - pi / 2., 0, 0, 1))
+            .times(Mat4.translation(-30, 0, 45))
             .times(Mat4.scale(3, 3, 3));
         let sun_position = sun_transform.times(vec4(0, 0, 0, 1));
         let white = hex_color("#ffffff");
         let orange = hex_color("#FFD580");
-        let sun_phase = Math.sin(Math.abs((4./60.) * pi * t + pi / 2));
+        let sun_phase = Math.sin(Math.abs((10./60.) * pi * t + pi / 2));
         let sun_color = orange.times(1-sun_phase).plus(white.times(sun_phase));
         // The parameters of the Light are: position, color, size
-        if (sun_position.dot(vec4(0, 1, 0, 0)) < -1)
-            program_state.lights = [new Light(sun_position, sun_color, 0)];
+        let sunlight_src_pos = vec4(sun_position[0]* 1, 50, 10, 1);
+        if (sun_position[1] < -4)
+            program_state.lights = [new Light(sunlight_src_pos, sun_color, 0)];
         else
-            program_state.lights = [new Light(sun_position, sun_color, 10**5)];
+            program_state.lights = [new Light(sunlight_src_pos, sun_color, 10**4)];
 
 
         //=============================================== skybox =============================================
         let skybox_transform = Mat4.scale(60, 40, 50);
         let skybox_color_light = color(0.4, 0.7, 1, 1);
         let skybox_color_dark = color(0, 0, 0.2, 1);
-        let skybox_color_period = - 0.5 * Math.cos((2./60.) * pi * t) + 0.5
+        let skybox_color_period = - 0.5 * Math.cos((5./60.) * pi * t) + 0.5
         let skybox_color = (skybox_color_light.times(1 - skybox_color_period)).plus(skybox_color_dark.times(skybox_color_period));
 
         //=============================================== floor =============================================
@@ -248,9 +254,9 @@ export class Proj_main_scene extends Scene {
         let lamp_transforms = [];
         let lamp_light_transforms = [];
         let light_num = 4;
-        let lights_on = sun_position.dot(vec4(0, 1, 0, 0)) < -1;
+        let lights_on = sun_position[1] < -4;
         for (let i = 0; i < light_num; i++) {
-            let lamppost_transform = model_transform.times(Mat4.translation((-1)**i * 15, 0, 3 + 15 * Math.floor(i/2)));
+            let lamppost_transform = model_transform.times(Mat4.translation((-1)**i * 10, 0, 3 + 15 * Math.floor(i/2)));
             let [a, b] = this.get_lamp_transform(context, program_state, lamppost_transform, lights_on);
             lamp_transforms.push(a);
             lamp_light_transforms.push(b);
@@ -268,20 +274,35 @@ export class Proj_main_scene extends Scene {
         let ring_position = stands_base.times(Mat4.translation(0, 2.7*standscale, -0.6 * standscale));
         ring_position = ring_position.times(Mat4.rotation(Math.PI, 0, 1, 1));
         ring_position = ring_position.times(Mat4.scale(0.5 * standscale, 0.5 * standscale, 0.2 * standscale));
+        // if lights are on, don't make the board so bright
+        let stand_mat = this.materials.stands;
+        if (lights_on) stand_mat = this.materials.stands.override({ambient: 0.3});  
 
         //=============================================== score board =============================================
-        let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, this.materials.scoreboard]);
-        
-        const gl = context.context;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, stand_mat]);
+
+        //=============================================== trees =====================================================
+        let st = (x, y, z, s) => Mat4.translation(x, y, z).times(Mat4.scale(s, s, s));
+        let tree_params = [[this.shapes.treetrunk, this.shapes.leaves], [this.materials.treetrunk, this.materials.leaves]];
+        let trees = [
+            create_tree(st(15, 0, 10, 0.8), ...tree_params),
+            create_tree(st(20, 0, 30, 1.1), ...tree_params),
+            create_tree(st(30, 0, 25, 1.4), ...tree_params),
+            create_tree(st(-15, 0, 10, 0.7), ...tree_params),
+            create_tree(st(-20, 0, 30, 1.3), ...tree_params),
+            create_tree(st(-30, 0, 25, 1.2), ...tree_params),
+            create_tree(st(6, 0, 35, 1), ...tree_params),
+            create_tree(st(15, 0, 38, 1.3), ...tree_params),
+        ]
+
 
         //=============================================== draw everything =============================================
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: sun_color}));
         this.shapes.skybox.draw(context, program_state, skybox_transform, this.materials.skybox.override({color: skybox_color}));
         this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
-        this.shapes.stands.draw(context, program_state, stands_board_transform, this.materials.stands);
-        this.shapes.stands.draw(context, program_state, stands_support_transform, this.materials.stands);
-        this.shapes.stands.draw(context, program_state, stands_foundation, this.materials.stands);
+        this.shapes.stands.draw(context, program_state, stands_board_transform, stand_mat);
+        this.shapes.stands.draw(context, program_state, stands_support_transform, stand_mat);
+        this.shapes.stands.draw(context, program_state, stands_foundation, stand_mat);
         this.shapes.ring.draw(context, program_state, ring_position, this.materials.ring);
         for(let i = 0; i < light_num; i++) {
             this.shapes.lampposts.draw(context, program_state, lamp_transforms[i], this.materials.lampposts);
@@ -293,6 +314,12 @@ export class Proj_main_scene extends Scene {
         for (let each of scoreboard_things) {
             each.shape.draw(context, program_state, each.transform, each.material);
         }
+        for (let tree of trees) {
+            for (let each of tree) {
+                each.shape.draw(context, program_state, each.transform, each.material);
+            }
+        }
+
 
         //=============================================== basketball =============================================
 
