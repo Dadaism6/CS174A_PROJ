@@ -57,10 +57,10 @@ class Basketball{
         // Backboard collision (bouncing)
         if(this.basePosition[2] + zOffset >= 29
            	&& this.basePosition[2] + zOffset <= 30
-            && this.basePosition[1] + yOffset <= 7.9
-            && this.basePosition[1] + yOffset >= 5.8
-            && this.basePosition[0] + xOffset >= -1.8
-            && this.basePosition[0] + xOffset <= 1.8
+            && this.basePosition[1] + yOffset <= 8.95
+            && this.basePosition[1] + yOffset >= 4.75
+            && this.basePosition[0] + xOffset >= -3.6
+            && this.basePosition[0] + xOffset <= 3.6
         )
         {
             this.basePosition[2] = 29;
@@ -231,7 +231,7 @@ export class Proj_main_scene extends Scene {
         this.initial_camera_location = Mat4.look_at(vec3(x, y, z), vec3(0, 5, 30), vec3(0, 1, 0));
         let xz_dir = vec3(0, 5, 30).minus(this.camera_location);
         xz_dir.normalize();
-      	this.basketball_position = this.camera_location.plus(xz_dir.times(4).plus(vec3(0, -1, 0)));
+      	this.basketball_position = this.camera_location.plus(xz_dir.times(4).plus(vec3(0, -1.5, 0)));
         xz_dir = xz_dir.plus(vec3(0,1,0));
         this.basketball_direction = xz_dir.normalized();
         program_state.set_camera(this.initial_camera_location.copy());
@@ -382,7 +382,7 @@ export class Proj_main_scene extends Scene {
             else
             {
                 let basketball_coord = this.basketball.calculatePosition(t);
-                let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
+                let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
                 // let predarray = this.basketball.calculatePrediction(t);
                 // for (let i = 0; i < predarray.length; i++)
@@ -397,7 +397,7 @@ export class Proj_main_scene extends Scene {
         {
             let placeholder_basketball = new Basketball(this.basketball_position, t, this.basketball_direction, this.basketball_power);
             let predarray = placeholder_basketball.calculatePrediction(t);
-          	let placeholder_basketball_transform = Mat4.translation(predarray[0][0], predarray[0][1], predarray[0][2]);
+          	let placeholder_basketball_transform = Mat4.translation(predarray[0][0], predarray[0][1], predarray[0][2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0));
           	this.shapes.basketball.draw(context, program_state, placeholder_basketball_transform, this.materials.basketball);
             for (let i = 0; i < predarray.length; i++)
             {
