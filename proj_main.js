@@ -19,28 +19,30 @@ class Basketball{
     {
         this.gravity = gravity;
         // this.basePosition = vec4(0, 5, -17.5, 1);
-      	this.initialTime = initialTime;
-        this.basePosition = initialPosition;
+        this.initialTime = initialTime;
+        this.basePosition = vec3(initialPosition[0],initialPosition[1],initialPosition[2]);
+        this.baseTimeX = initialTime;
         this.baseTimeZ = initialTime;
         this.baseTimeY = initialTime;
-      	this.throwPower = throwPower;
-      	this.xDir = throwDirection.dot(vec3(this.throwPower, 0, 0))
+        this.throwPower = throwPower;
+        this.xDir = throwDirection.dot(vec3(this.throwPower, 0, 0));
         this.zDir = throwDirection.dot(vec3(0, 0, this.throwPower));
         this.yDir = throwDirection.dot(vec3(0, this.throwPower, 0));
-      	this.prediction_array = [];
+        this.prediction_array = [];
         // console.log(this.zDir);
         // console.log(this.yDir);
     }
-		getLifeTime(currTime)
-  	{
-      	return currTime-this.initialTime;
+    getLifeTime(currTime)
+    {
+        return currTime-this.initialTime;
     }
     calculatePosition(currentTime)
     {
-        let timePassed = currentTime - this.baseTimeZ;
+        let timePassedX = currentTime - this.baseTimeX;
+        let timePassedZ = currentTime - this.baseTimeZ;
         let timePassedY = currentTime - this.baseTimeY;
-      	let xOffset = this.xDir * timePassed;
-        let zOffset = this.zDir * timePassed;
+        let xOffset = this.xDir * timePassedX;
+        let zOffset = this.zDir * timePassedZ;
         let yOffset = this.yDir * timePassedY + 0.5 * this.gravity * (timePassedY ** 2);
         // console.log(this.basePosition);
         let currentPosition = this.basePosition.plus(vec4(xOffset, yOffset, zOffset, 1));
@@ -52,29 +54,42 @@ class Basketball{
             this.basePosition[1] = 1;
             this.yDir = this.yDir * 0.8;
         }
+        // Backboard collision (bouncing)
+        if(this.basePosition[2] + zOffset >= 29
+           	&& this.basePosition[2] + zOffset <= 30
+            && this.basePosition[1] + yOffset <= 7.9
+            && this.basePosition[1] + yOffset >= 5.8
+            && this.basePosition[0] + xOffset >= -1.8
+            && this.basePosition[0] + xOffset <= 1.8
+        )
+        {
+            this.basePosition[2] = 29;
+            this.baseTimeZ = currentTime;
+            this.zDir = this.zDir * (-0.5);
+        }
         return currentPosition;
     }
-  	calculatePrediction(currentTime)
-  	{
-      	// let index = 0;
+    calculatePrediction(currentTime)
+    {
+        // let index = 0;
         let backup_baseTimeY = this.baseTimeY;
-      	let backup_basePosition = this.basePosition;
-      	let backup_yDir = this.yDir;
-      
-      	for (let i = 0; i < 200; i++)
+        let backup_basePosition = this.basePosition;
+        let backup_yDir = this.yDir;
+
+        for (let i = 0; i < 200; i++)
         {
             let predictionTime = currentTime + i * 0.025
-          	this.prediction_array[i] = this.calculatePosition(predictionTime);
+            this.prediction_array[i] = this.calculatePosition(predictionTime);
         }
-      	this.baseTimeY = backup_baseTimeY;
-      	this.basePosition = backup_basePosition;
-      	this.yDir = backup_yDir;
-      	// for(let i = currentTime; i < currentTime + 5.5; i = i + 0.5)
-      	// {
-      	// this.prediction_array[index] = this.calculatePosition(i);
-      	// index++;
-      	// }
-      	return this.prediction_array
+        this.baseTimeY = backup_baseTimeY;
+        this.basePosition = backup_basePosition;
+        this.yDir = backup_yDir;
+        // for(let i = currentTime; i < currentTime + 5.5; i = i + 0.5)
+        // {
+        // this.prediction_array[index] = this.calculatePosition(i);
+        // index++;
+        // }
+        return this.prediction_array
     }
 }
 
@@ -139,12 +154,12 @@ export class Proj_main_scene extends Scene {
         this.camera_location = vec3(0, 5, -20);
         this.return_to_initial = false;
         // ===== Basketball =====
-        this.initial_basketball_position = vec4(0, 5, -17.5, 1);
+        this.initial_basketball_position = vec4(0, 3.5, -16, 1);
         this.hitThrow = false;
         this.basketball;
-      	this.basketball_position = this.initial_basketball_position;
-      	this.basketball_direction = vec3(0, 1, 1).normalized();
-      	this.basketball_power = 20.0;
+        this.basketball_position = this.initial_basketball_position;
+        this.basketball_direction = vec3(0, 1, 1).normalized();
+        this.basketball_power = 15.0;
         // ===== Score =====
         this.score = 0;
     }
@@ -157,6 +172,35 @@ export class Proj_main_scene extends Scene {
         this.key_triggered_button("randomize position", ["Control", "0"], () => this.randomize = true);
         this.new_line();
         this.key_triggered_button("score +1", ["7"], () => this.score = (this.score + 1) % 100);
+        this.new_line();
+        this.key_triggered_button("Throw higher", ["Shift", "W"], () => {
+            this.basketball_direction = this.basketball_direction.plus(vec3(0,0.01,0));
+            this.basketball_direction = this.basketball_direction.normalized();
+        });
+        this.new_line();
+        this.key_triggered_button("Throw lower", ["Shift", "S"], () => {
+            this.basketball_direction = this.basketball_direction.plus(vec3(0,-0.01,0));
+            this.basketball_direction = this.basketball_direction.normalized();
+        });
+        this.new_line();
+        this.key_triggered_button("Throw left",["Shift", "A"], () => {
+            this.basketball_direction = this.basketball_direction.plus(vec3(0.01,0,0));
+            this.basketball_direction = this.basketball_direction.normalized();
+        });
+        this.new_line();
+        this.key_triggered_button("Throw right", ["Shift", "D"], () => {
+            this.basketball_direction = this.basketball_direction.plus(vec3(-0.01,0,0));
+            this.basketball_direction = this.basketball_direction.normalized();
+        });
+        this.new_line();
+        this.key_triggered_button("More power!!!!", ["Shift", "Q"], () => this.basketball_power = this.basketball_power + 0.5);
+        this.new_line();
+        this.key_triggered_button("Less power :(", ["Shift", "E"], () => {
+            if(this.basketball_power > 0.5)
+            {
+                this.basketball_power = this.basketball_power - 0.5;
+            }
+        });
     }
 
     get_lamp_transform(context, program_state, model_transform, lights_on, lamp_height=5, light_color=hex_color("#ffffff")) {
@@ -184,12 +228,12 @@ export class Proj_main_scene extends Scene {
         let x = getRandomArbitrary(-8, 8);
         let z = getRandomArbitrary(-5, -25);
         this.camera_location = vec3(x, y, z);
-      	this.basketball_position = this.camera_location;
         this.initial_camera_location = Mat4.look_at(vec3(x, y, z), vec3(0, 5, 30), vec3(0, 1, 0));
-      	let xz_dir = vec3(0, 5, 30).minus(this.camera_location);
-      	xz_dir.normalize();
-      	xz_dir = xz_dir.plus(vec3(0,1,0));
-      	this.basketball_direction = xz_dir.normalized();
+        let xz_dir = vec3(0, 5, 30).minus(this.camera_location);
+        xz_dir.normalize();
+      	this.basketball_position = this.camera_location.plus(xz_dir.times(4).plus(vec3(0, -1, 0)));
+        xz_dir = xz_dir.plus(vec3(0,1,0));
+        this.basketball_direction = xz_dir.normalized();
         program_state.set_camera(this.initial_camera_location.copy());
     }
   
@@ -330,35 +374,37 @@ export class Proj_main_scene extends Scene {
         }
         if (this.basketball)	// if a basketball exists (in the throwing process), display the basketball's movement
         {
-          	if (this.basketball.getLifeTime(t) > 10)	// each trial's duration is 10 seconds
+            if (this.basketball.getLifeTime(t) > 10)	// each trial's duration is 10 seconds
             {
-          			this.basketball = null;
-              	this.randomize_camera_location(program_state);
+                this.basketball = null;
+                this.randomize_camera_location(program_state);
             }
-          	else
+            else
             {
-              	let basketball_coord = this.basketball.calculatePosition(t);
-              	let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
-              	this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
-              	// let predarray = this.basketball.calculatePrediction(t);
-              	// for (let i = 0; i < predarray.length; i++)
-              	// {
-              	// let curr_pred = predarray[i]
-              	// let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
-              	// this.shapes.predbasketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
-              	// }
+                let basketball_coord = this.basketball.calculatePosition(t);
+                let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]);
+                this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
+                // let predarray = this.basketball.calculatePrediction(t);
+                // for (let i = 0; i < predarray.length; i++)
+                // {
+                // let curr_pred = predarray[i]
+                // let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
+                // this.shapes.predbasketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
+                // }
             }
         }
-      	else	// if no basketball exist (not in the throwing process), display the expected trajectory
+        else	// if no basketball exist (not in the throwing process), display the expected trajectory
         {
-          	let placeholder_basketball = new Basketball(this.basketball_position, t, this.basketball_direction, this.basketball_power);
-          	let predarray = placeholder_basketball.calculatePrediction(t);
-          	for (let i = 0; i < predarray.length; i++)
-          	{
-              	let curr_pred = predarray[i]
+            let placeholder_basketball = new Basketball(this.basketball_position, t, this.basketball_direction, this.basketball_power);
+            let predarray = placeholder_basketball.calculatePrediction(t);
+          	let placeholder_basketball_transform = Mat4.translation(predarray[0][0], predarray[0][1], predarray[0][2]);
+          	this.shapes.basketball.draw(context, program_state, placeholder_basketball_transform, this.materials.basketball);
+            for (let i = 0; i < predarray.length; i++)
+            {
+                let curr_pred = predarray[i]
                 let predbasketball_transform = Mat4.translation(curr_pred[0], curr_pred[1], curr_pred[2]).times(Mat4.scale(0.4, 0.4, 0.4));
-              	this.shapes.predbasketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
-          	}
+                this.shapes.predbasketball.draw(context, program_state, predbasketball_transform, this.materials.predbasketball);
+            }
         }
     }
 }
