@@ -5,8 +5,10 @@
  * score
  * texture
  */
-import {defs, tiny} from './examples/common.js';
-import {create_scoreboard} from './score-board.js';
+import { defs, tiny } from './examples/common.js';
+import { create_scoreboard } from './score-board.js';
+import { getRandomArbitrary, randn_bm } from './utils.js';
+import { Shadow_Textured_Phong_Shader } from './examples/shadow-demo-shaders.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -161,20 +163,21 @@ export class Proj_main_scene extends Scene {
             .times(Mat4.scale(0.2, 0.2, 0.2));
       	
         let light_position = model_transform.times(Mat4.translation(0, 2*lamp_height, 0)).times(vec4(0, 0, 0, 1));
-        if (lights_on) 
-            program_state.lights.push(new Light(light_position, light_color, 100));
-        else
+        if (lights_on) {
+            const p = 0.02;
+            if (Math.random() > 1-p) 
+                program_state.lights.push(new Light(light_position, light_color, 100 + randn_bm() * 10 - 5));
+            else 
+                program_state.lights.push(new Light(light_position, light_color, 100));
+        } else
           	program_state.lights.push(new Light(light_position, light_color, 0));
       	return [lamppost_transform, light_transform];
     }
   
-    getRandomArbitrary(min, max) {
-        return Math.random() * (max - min) + min;
-    }
     randomize_camera_location(program_state) {
         let y = 5;
-        let x = this.getRandomArbitrary(-10, 10);
-        let z = this.getRandomArbitrary(-5, -25);
+        let x = getRandomArbitrary(-10, 10);
+        let z = getRandomArbitrary(-5, -25);
         this.camera_location = vec3(x, y, z);
       	this.basketball_position = this.camera_location;
         this.initial_camera_location = Mat4.look_at(vec3(x, y, z), vec3(0, 5, 30), vec3(0, 1, 0));
@@ -238,10 +241,10 @@ export class Proj_main_scene extends Scene {
         let skybox_color_period = - 0.5 * Math.cos((2./60.) * pi * t) + 0.5
         let skybox_color = (skybox_color_light.times(1 - skybox_color_period)).plus(skybox_color_dark.times(skybox_color_period));
 
-        // floor
+        //=============================================== floor =============================================
         let floor_transform = Mat4.scale(60, 0.1, 40);
 
-        // light
+        //=============================================== lights =============================================
         let lamp_transforms = [];
         let lamp_light_transforms = [];
         let light_num = 4;
@@ -268,8 +271,9 @@ export class Proj_main_scene extends Scene {
 
         //=============================================== score board =============================================
         let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, this.materials.scoreboard]);
-
-
+        
+        const gl = context.context;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         //=============================================== draw everything =============================================
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: sun_color}));

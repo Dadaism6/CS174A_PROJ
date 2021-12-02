@@ -1,9 +1,8 @@
-import {defs, tiny} from './examples/common.js';
+import {tiny} from './examples/common.js';
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material
+    Mat4
 } = tiny;
-const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
 // create an 7 segment display
 //    0
@@ -13,7 +12,12 @@ const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivisio
 // 4 | | 5
 //    —
 //    6
-// unit: the default width of a cube. all translations should be multiplied by this
+// score: the score to be displayed
+// translation: the transformation (translation) to be applied to the scoreboard
+// shape: an instance of the Cube class
+// materials: an array of length 2, corresponding to the material used when the segments
+//          are lit and dim respectively.
+// unit: the default width of a cube. all translations should be multiplied by this.
 export function create_scoreboard(score, translation, shape, materials, unit=2) {
     let transform = translation;
     let cube = shape;
@@ -23,8 +27,10 @@ export function create_scoreboard(score, translation, shape, materials, unit=2) 
     let w = 4 * a + 2 * b + 3 * c;
     let h = 3 * a + 2 * b + 2 * c;
 
+    // generate one single segment of the seven segment display
     const generate_segment = (id, lit, trans) => {
         let obj = {};
+        // determine whether this is a horizontal segment
         if (id % 3 != 0)
             obj.transform = trans.times(Mat4.scale(a, b, 0.1));
         else
