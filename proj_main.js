@@ -403,7 +403,7 @@ export class Proj_main_scene extends Scene {
             {
                 let basketball_coord = this.basketball.calculatePosition(t);
                 let prev_coord = this.basketball.calculatePosition(t-dt);
-                let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0));
+                let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0).times(Mat4.scale(0.8, 0.8, 0.8)));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
                 // scoring
                 if (this.can_score && prev_coord[1] - basketball_coord[1] > 0)
