@@ -161,6 +161,8 @@ export class Proj_main_scene extends Scene {
         this.basketball_direction = vec3(0, 1, 1).normalized();
         this.basketball_power = 15.0;
         // ===== Score =====
+        this.ring_center = vec3(0, 5.4, 28.8);
+        this.can_score = true;
         this.score = 0;
     }
 
@@ -348,6 +350,7 @@ export class Proj_main_scene extends Scene {
         this.shapes.stands.draw(context, program_state, stands_support_transform, stand_mat);
         this.shapes.stands.draw(context, program_state, stands_foundation, stand_mat);
         this.shapes.ring.draw(context, program_state, ring_position, this.materials.ring);
+        // console.log(ring_position[0], ring_position[1], ring_position[2], ring_position[3]);
         for(let i = 0; i < light_num; i++) {
             this.shapes.lampposts.draw(context, program_state, lamp_transforms[i], this.materials.lampposts);
             if (lights_on)
@@ -370,6 +373,7 @@ export class Proj_main_scene extends Scene {
         if (this.hitThrow)
         {
             this.hitThrow = false;
+            this.can_score = true;
             this.basketball = new Basketball(this.basketball_position, t, this.basketball_direction, this.basketball_power);
         }
         if (this.basketball)	// if a basketball exists (in the throwing process), display the basketball's movement
@@ -377,6 +381,7 @@ export class Proj_main_scene extends Scene {
             if (this.basketball.getLifeTime(t) > 10)	// each trial's duration is 10 seconds
             {
                 this.basketball = null;
+                this.can_score = false;
                 this.randomize_camera_location(program_state);
             }
             else
@@ -384,6 +389,16 @@ export class Proj_main_scene extends Scene {
                 let basketball_coord = this.basketball.calculatePosition(t);
                 let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
+                // scoring
+                if (this.can_score)
+                {
+                    let ring_center_distance = Math.sqrt((basketball_coord[0] - this.ring_center[0])**2 + (basketball_coord[1] - this.ring_center[1])**2 + (basketball_coord[2] - this.ring_center[2])**2);
+                    if (ring_center_distance <= 1.0)
+                    {
+                        this.score = (this.score + 1) % 100;
+                        this.can_score = false;
+                    }
+                }
                 // let predarray = this.basketball.calculatePrediction(t);
                 // for (let i = 0; i < predarray.length; i++)
                 // {
