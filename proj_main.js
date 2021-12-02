@@ -1,9 +1,6 @@
 /*
  * Todo
- * control throw angle and power
- * shoot in the basket?
- * score
- * texture
+ * texture backboard
  */
 import { defs, tiny } from './examples/common.js';
 import { create_scoreboard, create_tree } from './objects.js';
@@ -31,6 +28,7 @@ class Basketball{
         this.prediction_array = [];
         // console.log(this.zDir);
         // console.log(this.yDir);
+        this.hit_the_board = false;
     }
     getLifeTime(currTime)
     {
@@ -61,11 +59,28 @@ class Basketball{
             && this.basePosition[1] + yOffset >= 4.75
             && this.basePosition[0] + xOffset >= -3.6
             && this.basePosition[0] + xOffset <= 3.6
+            && !this.hit_the_board
         )
         {
             this.basePosition[2] = 29;
             this.baseTimeZ = currentTime;
-            this.zDir = this.zDir * (-0.5);
+            this.zDir = this.zDir * (-0.8);
+            this.hit_the_board = true;
+        }
+        // Scoreboard collision
+        else if(this.basePosition[2] + zOffset >= 29
+            && this.basePosition[2] + zOffset <= 30
+            && this.basePosition[1] + yOffset <= 11.5
+            && this.basePosition[1] + yOffset > 8.95
+            && this.basePosition[0] + xOffset >= -1.5
+            && this.basePosition[0] + xOffset <= 1.5
+            && !this.hit_the_board
+        )
+        {
+            this.basePosition[2] = 29;
+            this.baseTimeZ = currentTime;
+            this.zDir = this.zDir * (-0.8);
+            this.hit_the_board = true;
         }
         return currentPosition;
     }
@@ -171,10 +186,10 @@ export class Proj_main_scene extends Scene {
         this.new_line();
         this.key_triggered_button("Throw basketball", ["t"], () => {this.hitThrow = true;});
         this.new_line();
-        this.key_triggered_button("randomize position", ["Control", "0"], () => this.randomize = true);
-        this.new_line();
-        this.key_triggered_button("score +1", ["7"], () => this.score = (this.score + 1) % 100);
-        this.new_line();
+        // this.key_triggered_button("randomize position", ["Control", "0"], () => this.randomize = true);
+        // this.new_line();
+        // this.key_triggered_button("score +1", ["7"], () => this.score = (this.score + 1) % 100);
+        // this.new_line();
         this.key_triggered_button("Throw higher", ["Shift", "W"], () => {
             this.basketball_direction = this.basketball_direction.plus(vec3(0,0.01,0));
             this.basketball_direction = this.basketball_direction.normalized();
@@ -387,10 +402,11 @@ export class Proj_main_scene extends Scene {
             else
             {
                 let basketball_coord = this.basketball.calculatePosition(t);
+                let prev_coord = this.basketball.calculatePosition(t-dt);
                 let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
                 // scoring
-                if (this.can_score)
+                if (this.can_score && prev_coord[1] - basketball_coord[1] > 0)
                 {
                     let ring_center_distance = Math.sqrt((basketball_coord[0] - this.ring_center[0])**2 + (basketball_coord[1] - this.ring_center[1])**2 + (basketball_coord[2] - this.ring_center[2])**2);
                     if (ring_center_distance <= 1.0)
