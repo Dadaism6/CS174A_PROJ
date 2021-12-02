@@ -15,7 +15,7 @@ const {
 const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
 class Basketball{
-    constructor(initialPosition, initialTime, throwDirection, throwPower, gravity = -9.8)
+    constructor(initialPosition, initialTime, throwDirection, throwPower, gravity = -9.8*2)
     {
         this.gravity = gravity;
         // this.basePosition = vec4(0, 5, -17.5, 1);
@@ -137,7 +137,7 @@ export class Proj_main_scene extends Scene {
                     texture: new Texture("assets/basketball.jpg","LINEAR_MIPMAP_LINEAR")
                 }),
             predbasketball: new Material(new defs.Phong_Shader(),
-                {ambient: 1, color: color(1, 1, 1, 0.2)}),
+                {ambient: 1, diffusivity: 0, specularity: 0, color: color(1, 1, 1, 0.1)}),
             litScore: new Material(new Phong_Shader(), 
                 {ambient: 1, diffusivity: 0, specularity: 0, color: color(1, 0, 0, 1)}),
             dimScore: new Material(new Phong_Shader(), 
