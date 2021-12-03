@@ -65,7 +65,7 @@ class Basketball{
         {
             this.basePosition[2] = 29;
             this.baseTimeZ = currentTime;
-            this.zDir = this.zDir * (-0.8);
+            this.zDir = this.zDir * (-0.5);
             this.hit_the_board = true;
         }
         // Scoreboard collision
@@ -80,7 +80,7 @@ class Basketball{
         {
             this.basePosition[2] = 29;
             this.baseTimeZ = currentTime;
-            this.zDir = this.zDir * (-0.8);
+            this.zDir = this.zDir * (-0.5);
             this.hit_the_board = true;
         }
         return currentPosition;
@@ -406,11 +406,10 @@ export class Proj_main_scene extends Scene {
             else
             {
                 let basketball_coord = this.basketball.calculatePosition(t);
-                let prev_coord = this.basketball.calculatePosition(t-dt);
                 let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0).times(Mat4.scale(0.8, 0.8, 0.8)));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
                 // scoring
-                if (this.can_score && prev_coord[1] - basketball_coord[1] > 0)
+                if (this.can_score)
                 {
                     let ring_center_distance = Math.sqrt((basketball_coord[0] - this.ring_center[0])**2 + (basketball_coord[1] - this.ring_center[1])**2 + (basketball_coord[2] - this.ring_center[2])**2);
                     if (ring_center_distance <= 1.0)
