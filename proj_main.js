@@ -5,11 +5,12 @@
 import { defs, tiny } from './examples/common.js';
 import { create_scoreboard, create_tree } from './objects.js';
 import { getRandomArbitrary, randn_bm } from './utils.js';
+import { Textured_Phong } from './shaders.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
-const {Cube, Axis_Arrows, Textured_Phong, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
+const {Cube, Axis_Arrows, Phong_Shader, Basic_Shader, Subdivision_Sphere} = defs
 
 class Basketball{
     constructor(initialPosition, initialTime, throwDirection, throwPower, gravity = -9.8*2)
@@ -136,11 +137,11 @@ export class Proj_main_scene extends Scene {
             floor: new Material(new Phong_Shader(5),
                 {color: color(0.5, 0.8, 0.5, 1), ambient: .2, diffusivity: 0.9, specularity: 0.1}),
             stands: new Material(new Phong_Shader(5),
-                {ambient: 0.3, diffusivity: 0.8, specularity: 1, color: color(1, 1, 1, 1)}),
-            backboard: new Material(new Textured_Phong(),
+                {ambient: 0.2, diffusivity: 0.8, specularity: 1, color: color(1, 1, 1, 1)}),
+            backboard: new Material(new Textured_Phong(5),
                 {
-                    color: hex_color("#000000"),//background color should be black
-                    ambient: 1.0,
+                    color: color(0, 0, 0, 1),//background color should be black
+                    ambient: 0.2, diffusivity: 0.8, specularity: 1,
                     texture: new Texture("assets/backboard.jpg","LINEAR_MIPMAP_LINEAR")
                 }),
            	ring: new Material(new Phong_Shader(5),
@@ -151,10 +152,10 @@ export class Proj_main_scene extends Scene {
                 {ambient: 0.1, diffusivity: 0.5, specularity: 0, color: hex_color("#808080")}),
             lamplights: new Material(new Phong_Shader(),
                 {ambient: 1, color: hex_color("#ffffff")}),
-            basketball: new Material(new Textured_Phong(),
+            basketball: new Material(new Textured_Phong(5),
                 {
                     color: hex_color("#000000"),//background color should be black
-                    ambient: 1.0,
+                    ambient: 0.3, diffusivity: 1, specularity: 0.1,
                     texture: new Texture("assets/basketball.jpg","LINEAR_MIPMAP_LINEAR")
                 }),
             predbasketball: new Material(new defs.Phong_Shader(),
@@ -164,11 +165,11 @@ export class Proj_main_scene extends Scene {
             dimScore: new Material(new Phong_Shader(), 
                 {ambient: 0.4, diffusivity: 1, specularity: 0, color: color(0.7, 0.7, 0.7, 0.3)}),
             scoreboard: new Material(new Phong_Shader(5), 
-                {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: color(1, 1, 1, 1)}),
+                {ambient: 0.3, diffusivity: 0.8, specularity: 1, color: color(1, 1, 1, 1)}),
             treetrunk: new Material(new Phong_Shader(5), 
-                {ambient: 0.3, diffusivity: 0.6, specularity: 0, color: color(85/255, 50/255, 0, 1)}),
+                {ambient: 0.3, diffusivity: 0.4, specularity: 0, color: color(85/255, 50/255, 0, 1)}),
             leaves: new Material(new Phong_Shader(5), 
-                {ambient: 0.3, diffusivity: 0.6, specularity: 0, color: color(0/255, 85/255, 15/255, 1)}),
+                {ambient: 0.3, diffusivity: 0.4, specularity: 0, color: color(0/255, 85/255, 15/255, 1)}),
         }
         // ===== Camera =====
         this.initial_camera_location = Mat4.look_at(vec3(0, 5, -20), vec3(0, 5, 0), vec3(0, 1, 0));
@@ -341,12 +342,9 @@ export class Proj_main_scene extends Scene {
         let ring_position = stands_base.times(Mat4.translation(0, 2.7*standscale, -0.6 * standscale));
         ring_position = ring_position.times(Mat4.rotation(Math.PI, 0, 1, 1));
         ring_position = ring_position.times(Mat4.scale(0.5 * standscale, 0.5 * standscale, 0.2 * standscale));
-        // if lights are on, don't make the board so bright
-        let stand_mat = this.materials.stands;
-        if (lights_on) stand_mat = this.materials.stands.override({ambient: 0.3});  
 
         //=============================================== score board =============================================
-        let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, stand_mat]);
+        let scoreboard_things = create_scoreboard(this.score, Mat4.translation(0, 10, 30), this.shapes.scoreboard, [this.materials.litScore, this.materials.dimScore, this.materials.scoreboard]);
 
         //=============================================== trees =====================================================
         let st = (x, y, z, s) => Mat4.translation(x, y, z).times(Mat4.scale(s, s, s));
@@ -368,8 +366,8 @@ export class Proj_main_scene extends Scene {
         this.shapes.skybox.draw(context, program_state, skybox_transform, this.materials.skybox.override({color: skybox_color}));
         this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
         this.shapes.stands.draw(context, program_state, stands_board_transform, this.materials.backboard);
-        this.shapes.stands.draw(context, program_state, stands_support_transform, stand_mat);
-        this.shapes.stands.draw(context, program_state, stands_foundation, stand_mat);
+        this.shapes.stands.draw(context, program_state, stands_support_transform, this.materials.stands);
+        this.shapes.stands.draw(context, program_state, stands_foundation, this.materials.stands);
         this.shapes.ring.draw(context, program_state, ring_position, this.materials.ring);
         // console.log(ring_position[0], ring_position[1], ring_position[2], ring_position[3]);
         for(let i = 0; i < light_num; i++) {
