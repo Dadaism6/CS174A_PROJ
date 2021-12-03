@@ -137,6 +137,12 @@ export class Proj_main_scene extends Scene {
                 {color: color(0.5, 0.8, 0.5, 1), ambient: .2, diffusivity: 0.9, specularity: 0.1}),
             stands: new Material(new Phong_Shader(5),
                 {ambient: 0.3, diffusivity: 0.8, specularity: 1, color: color(1, 1, 1, 1)}),
+            backboard: new Material(new Textured_Phong(),
+                {
+                    color: hex_color("#000000"),//background color should be black
+                    ambient: 1.0,
+                    texture: new Texture("assets/backboard.jpg","LINEAR_MIPMAP_LINEAR")
+                }),
            	ring: new Material(new Phong_Shader(5),
                 {ambient: 0.6, diffusivity: 0.6, specularity: 0.8, color: hex_color("#FFA500")}),
             skybox: new Material(new Phong_Shader(),
@@ -326,7 +332,7 @@ export class Proj_main_scene extends Scene {
         //=============================================== define stands =============================================
         let stands_base = Mat4.translation(0,0,30);
         let standscale = 2;
-        let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, 0));
+        let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, -0.5));
         stands_board_transform = stands_board_transform.times(Mat4.scale(1.8 * standscale, 1.05 * standscale, 0.1));
         let stands_support_transform = stands_base.times(Mat4.translation(0, 0.5 * 3.425 * standscale, 0));
         stands_support_transform = stands_support_transform.times(Mat4.scale(0.2 * standscale, 0.5 * 3.425 * standscale, 0.1));
@@ -361,7 +367,7 @@ export class Proj_main_scene extends Scene {
         this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun.override({color: sun_color}));
         this.shapes.skybox.draw(context, program_state, skybox_transform, this.materials.skybox.override({color: skybox_color}));
         this.shapes.floor.draw(context, program_state, floor_transform, this.materials.floor);
-        this.shapes.stands.draw(context, program_state, stands_board_transform, stand_mat);
+        this.shapes.stands.draw(context, program_state, stands_board_transform, this.materials.backboard);
         this.shapes.stands.draw(context, program_state, stands_support_transform, stand_mat);
         this.shapes.stands.draw(context, program_state, stands_foundation, stand_mat);
         this.shapes.ring.draw(context, program_state, ring_position, this.materials.ring);
