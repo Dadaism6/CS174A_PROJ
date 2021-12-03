@@ -53,29 +53,29 @@ class Basketball{
             this.basePosition[1] = 1;
             this.yDir = this.yDir * 0.8;
         }
-        // Backboard collision (bouncing)
-        if(this.basePosition[2] + zOffset >= 29
+        if((this.basePosition[2] + zOffset >= 29
            	&& this.basePosition[2] + zOffset <= 30
             && this.basePosition[1] + yOffset <= 8.95
             && this.basePosition[1] + yOffset >= 4.75
             && this.basePosition[0] + xOffset >= -3.6
             && this.basePosition[0] + xOffset <= 3.6
-            && !this.hit_the_board
-        )
-        {
-            this.basePosition[2] = 29;
-            this.baseTimeZ = currentTime;
-            this.zDir = this.zDir * (-0.5);
-            this.hit_the_board = true;
-        }
-        // Scoreboard collision
-        else if(this.basePosition[2] + zOffset >= 29
+            && !this.hit_the_board) // Backboard collision (bouncing)
+            ||
+            (this.basePosition[2] + zOffset >= 29
             && this.basePosition[2] + zOffset <= 30
             && this.basePosition[1] + yOffset <= 11.5
             && this.basePosition[1] + yOffset > 8.95
             && this.basePosition[0] + xOffset >= -1.5
             && this.basePosition[0] + xOffset <= 1.5
-            && !this.hit_the_board
+            && !this.hit_the_board) // Scoreboard collision (bouncing)
+            ||
+            (this.basePosition[2] + zOffset >= 29
+            && this.basePosition[2] + zOffset <= 30
+            && this.basePosition[1] + yOffset <= 8.95
+            && this.basePosition[1] + yOffset > 0
+            && this.basePosition[0] + xOffset >= -0.4
+            && this.basePosition[0] + xOffset <= 0.4
+            && !this.hit_the_board) // Scoreboard collision (bouncing)
         )
         {
             this.basePosition[2] = 29;
@@ -293,7 +293,7 @@ export class Proj_main_scene extends Scene {
         //=============================================== The sun =============================================
         let sun_transform = model_transform
             .times(Mat4.rotation(-(5./60.) * pi * t - pi / 2., 0, 0, 1))
-            .times(Mat4.translation(-30, 0, 45))
+            .times(Mat4.translation(-30, 0, 55))
             .times(Mat4.scale(3, 3, 3));
         let sun_position = sun_transform.times(vec4(0, 0, 0, 1));
         let white = hex_color("#ffffff");
@@ -309,14 +309,14 @@ export class Proj_main_scene extends Scene {
 
 
         //=============================================== skybox =============================================
-        let skybox_transform = Mat4.scale(60, 40, 50);
+        let skybox_transform = Mat4.scale(60, 40, 60);
         let skybox_color_light = color(0.4, 0.7, 1, 1);
         let skybox_color_dark = color(0, 0, 0.2, 1);
         let skybox_color_period = - 0.5 * Math.cos((5./60.) * pi * t) + 0.5
         let skybox_color = (skybox_color_light.times(1 - skybox_color_period)).plus(skybox_color_dark.times(skybox_color_period));
 
         //=============================================== floor =============================================
-        let floor_transform = Mat4.scale(60, 0.1, 40);
+        let floor_transform = Mat4.scale(60, 0.1, 50);
 
         //=============================================== lights =============================================
         let lamp_transforms = [];
@@ -333,7 +333,7 @@ export class Proj_main_scene extends Scene {
         //=============================================== define stands =============================================
         let stands_base = Mat4.translation(0,0,30);
         let standscale = 2;
-        let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, -0.5));
+        let stands_board_transform = stands_base.times(Mat4.translation(0, 3.425*standscale, -0.01));
         stands_board_transform = stands_board_transform.times(Mat4.scale(1.8 * standscale, 1.05 * standscale, 0.1));
         let stands_support_transform = stands_base.times(Mat4.translation(0, 0.5 * 3.425 * standscale, 0));
         stands_support_transform = stands_support_transform.times(Mat4.scale(0.2 * standscale, 0.5 * 3.425 * standscale, 0.1));
@@ -397,7 +397,7 @@ export class Proj_main_scene extends Scene {
         }
         if (this.basketball)	// if a basketball exists (in the throwing process), display the basketball's movement
         {
-            if (this.basketball.getLifeTime(t) > 10)	// each trial's duration is 10 seconds
+            if (this.basketball.getLifeTime(t) > 8) // each trial's duration is 10 seconds
             {
                 this.basketball = null;
                 this.can_score = false;
@@ -408,6 +408,12 @@ export class Proj_main_scene extends Scene {
                 let basketball_coord = this.basketball.calculatePosition(t);
                 let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0).times(Mat4.scale(0.8, 0.8, 0.8)));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
+                if (basketball_coord[2] > 50)
+                {
+                    this.basketball = null;
+                    this.can_score = false;
+                    this.randomize_camera_location(program_state);
+                }
                 // scoring
                 if (this.can_score)
                 {
