@@ -186,6 +186,8 @@ export class Proj_main_scene extends Scene {
         this.ring_center = vec3(0, 5.4, 28.8);
         this.can_score = true;
         this.score = 0;
+        this.current_y = 0;
+        this.previous_y = 0;
     }
 
     make_control_panel() {
@@ -397,7 +399,7 @@ export class Proj_main_scene extends Scene {
         }
         if (this.basketball)	// if a basketball exists (in the throwing process), display the basketball's movement
         {
-            if (this.basketball.getLifeTime(t) > 8) // each trial's duration is 10 seconds
+            if (this.basketball.getLifeTime(t) > 8) // each trial's duration is 8 seconds
             {
                 this.basketball = null;
                 this.can_score = false;
@@ -406,6 +408,8 @@ export class Proj_main_scene extends Scene {
             else
             {
                 let basketball_coord = this.basketball.calculatePosition(t);
+                this.previous_y = this.current_y;
+                this.current_y = basketball_coord[1];
                 let basketball_transform = Mat4.translation(basketball_coord[0], basketball_coord[1], basketball_coord[2]).times(Mat4.rotation(Math.PI / 2., 0, 1, 0).times(Mat4.scale(0.8, 0.8, 0.8)));
                 this.shapes.basketball.draw(context, program_state, basketball_transform, this.materials.basketball);
                 if (basketball_coord[2] > 50)
@@ -418,7 +422,7 @@ export class Proj_main_scene extends Scene {
                 if (this.can_score)
                 {
                     let ring_center_distance = Math.sqrt((basketball_coord[0] - this.ring_center[0])**2 + (basketball_coord[1] - this.ring_center[1])**2 + (basketball_coord[2] - this.ring_center[2])**2);
-                    if (ring_center_distance <= 1.0)
+                    if ((ring_center_distance <= 1.0) && (this.previous_y > this.current_y))    // if the basketball touches the center of the ring and is falling instead of rising (this prevents scoring when bouncing up)
                     {
                         this.score = (this.score + 1) % 100;
                         this.can_score = false;
